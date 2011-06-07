@@ -668,7 +668,7 @@ class S3(object):
 		if "etag" not in response["headers"]:
 			response["headers"]["etag"] = ""
 
-		if response["status"] < 200 or response["status"] > 299:
+		if response["status"] < 200 or response["status"] >= 300:
 			try_retry = False
 			if response["status"] >= 500:
 				## AWS internal error - retry
@@ -748,7 +748,7 @@ class S3(object):
 			warning("Redirected to: %s" % (redir_hostname))
 			return self.recv_file(request, stream, labels)
 
-		if response["status"] < 200 or response["status"] > 299:
+		if response["status"] < 200 or response["status"] >= 300:
 			raise S3Error(response)
 
 		if start_position == 0:
