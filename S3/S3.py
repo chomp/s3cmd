@@ -20,11 +20,12 @@ except ImportError:
 
 from Utils import *
 from SortedDict import SortedDict
-from ACL import ACL, GranteeLogDelivery
 from AccessLog import AccessLog
+from ACL import ACL, GranteeLogDelivery
 from BidirMap import BidirMap
 from Config import Config
 from Exceptions import *
+from MultiPart import MultiPartUpload
 from S3Uri import S3Uri
 
 __all__ = []
@@ -311,7 +312,7 @@ class S3(object):
 
 		return response
 
-	def object_put(self, filename, uri, extra_headers = None, extra_label = ""):
+	def object_put(self, filename, uri, extra_headers = None, extra_label = "", multipart = False):
 		# TODO TODO
 		# Make it consistent with stream-oriented object_get()
 		if uri.type != "s3":
@@ -324,9 +325,19 @@ class S3(object):
 			size = os.stat(filename)[ST_SIZE]
 		except (IOError, OSError), e:
 			raise InvalidFileError(u"%s: %s" % (unicodise(filename), e.strerror))
+
 		headers = SortedDict(ignore_case = True)
 		if extra_headers:
 			headers.update(extra_headers)
+
+		if not multipart:
+			if size > 104857600: # 100MB
+				multipart = True
+
+		if multipart:
+			# Multipart requests are quite different... drop here
+			return self.send_file_multipart(file, headers, uri, size)
+
 		headers["content-length"] = size
 		content_type = None
 		if self.config.guess_mime_type:
@@ -339,8 +350,8 @@ class S3(object):
 			headers["x-amz-acl"] = "public-read"
 		if self.config.reduced_redundancy:
 			headers["x-amz-storage-class"] = "REDUCED_REDUNDANCY"
-		request = self.create_request("OBJECT_PUT", uri = uri, headers = headers)
 		labels = { 'source' : unicodise(filename), 'destination' : unicodise(uri.uri()), 'extra' : extra_label }
+		request = self.create_request("OBJECT_PUT", uri = uri, headers = headers)
 		response = self.send_file(request, file, labels)
 		return response
 
