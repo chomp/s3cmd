@@ -1416,7 +1416,7 @@ class OptionS3ACL(Option):
 			else:
 				raise OptionValueError("option %s: invalid S3 ACL permission: %s (valid values: %s)" % 
 					(opt, permission, ", ".join(permissions)))
-		except:
+		except Exception:
 			raise OptionValueError("option %s: invalid S3 ACL format: %r" % (opt, value))
 
 class OptionAll(OptionMimeType, OptionS3ACL):
@@ -1609,7 +1609,7 @@ def main():
 	if options.check_md5 == False:
 		try:
 			cfg.sync_checks.remove("md5")
-		except:
+		except Exception:
 			pass
 	if options.check_md5 == True and cfg.sync_checks.count("md5") == 0:
 		cfg.sync_checks.append("md5")
