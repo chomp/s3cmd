@@ -40,7 +40,7 @@ class S3Request(object):
 		self.sign()
 
 	def update_timestamp(self):
-		if self.headers.has_key("date"):
+		if "date" in self.headers:
 			del(self.headers["date"])
 		self.headers["x-amz-date"] = time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime())
 
@@ -138,7 +138,7 @@ class S3(object):
 
 	def get_hostname(self, bucket):
 		if bucket and check_bucket_name_dns_conformity(bucket):
-			if self.redir_map.has_key(bucket):
+			if bucket in self.redir_map:
 				host = self.redir_map[bucket]
 			else:
 				host = getHostnameFromBucket(bucket)
@@ -530,8 +530,8 @@ class S3(object):
 	def send_request(self, request, body = None, retries = _max_retries):
 		method_string, resource, headers = request.get_triplet()
 		debug("Processing request, please wait...")
-		if not headers.has_key('content-length'):
-			headers['content-length'] = body and len(body) or 0
+		if "content-length" not in headers:
+			headers["content-length"] = body and len(body) or 0
 		try:
 			# "Stringify" all headers
 			for header in headers.keys():
@@ -665,8 +665,8 @@ class S3(object):
 
 		# S3 from time to time doesn't send ETag back in a response :-(
 		# Force re-upload here.
-		if not response['headers'].has_key('etag'):
-			response['headers']['etag'] = '' 
+		if "etag" not in response["headers"]:
+			response["headers"]["etag"] = ""
 
 		if response["status"] < 200 or response["status"] > 299:
 			try_retry = False
