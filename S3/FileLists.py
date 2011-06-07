@@ -17,39 +17,39 @@ import glob
 __all__ = ["fetch_local_list", "fetch_remote_list", "compare_filelists", "filter_exclude_include"]
 
 def _fswalk_follow_symlinks(path):
-        '''
-        Walk filesystem, following symbolic links (but without recursion), on python2.4 and later
+	"""
+	Walk filesystem, following symbolic links (but without recursion), on python2.4 and later
 
-        If a recursive directory link is detected, emit a warning and skip.
-        '''
-        assert os.path.isdir(path) # only designed for directory argument
-        walkdirs = set([path])
-        targets = set()
-        for dirpath, dirnames, filenames in os.walk(path):
-                for dirname in dirnames:
-                        current = os.path.join(dirpath, dirname)
-                        target = os.path.realpath(current)
-                        if os.path.islink(current):
-                                if target in targets:
-                                        warning("Skipping recursively symlinked directory %s" % dirname)
-                                else:
-                                        walkdirs.add(current)
-                        targets.add(target)
-        for walkdir in walkdirs:
-                for value in os.walk(walkdir):
-                        yield value
+	If a recursive directory link is detected, emit a warning and skip.
+	"""
+	assert os.path.isdir(path) # only designed for directory argument
+	walkdirs = set([path])
+	targets = set()
+	for dirpath, dirnames, filenames in os.walk(path):
+		for dirname in dirnames:
+			current = os.path.join(dirpath, dirname)
+			target = os.path.realpath(current)
+			if os.path.islink(current):
+				if target in targets:
+					warning("Skipping recursively symlinked directory %s" % (dirname))
+				else:
+					walkdirs.add(current)
+			targets.add(target)
+	for walkdir in walkdirs:
+		for value in os.walk(walkdir):
+			yield value
 
 def _fswalk(path, follow_symlinks):
-        '''
-        Directory tree generator
+	"""
+	Directory tree generator
 
-        path (str) is the root of the directory tree to walk
+	path (str) is the root of the directory tree to walk
 
-        follow_symlinks (bool) indicates whether to descend into symbolically linked directories
-        '''
-        if follow_symlinks:
-                return _fswalk_follow_symlinks(path)
-        return os.walk(path)
+	follow_symlinks (bool) indicates whether to descend into symbolically linked directories
+	"""
+	if follow_symlinks:
+		return _fswalk_follow_symlinks(path)
+	return os.walk(path)
 
 def filter_exclude_include(src_list):
 	info(u"Applying --exclude/--include")
@@ -101,8 +101,8 @@ def fetch_local_list(args, recursive = None):
 				if not os.path.isfile(full_name):
 					continue
 				if os.path.islink(full_name):
-                                    if not cfg.follow_symlinks:
-                                            continue
+					if not cfg.follow_symlinks:
+						continue
 				relative_file = unicodise(os.path.join(rel_root, f))
 				if os.path.sep != "/":
 					# Convert non-unix dir separators to '/'
@@ -284,7 +284,7 @@ def compare_filelists(src_list, dst_list, src_remote, dst_remote):
 
 	for file in src_list.keys():
 		debug(u"CHECK: %s" % file)
-		if dst_list.has_key(file):
+		if file in dst_list:
 			## Was --skip-existing requested?
 			if cfg.skip_existing:
 				debug(u"IGNR: %s (used --skip-existing)" % (file))
@@ -335,5 +335,3 @@ def compare_filelists(src_list, dst_list, src_remote, dst_remote):
 			del(dst_list[file])
 
 	return src_list, dst_list, exists_list
-
-
