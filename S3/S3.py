@@ -88,15 +88,16 @@ class S3(object):
 		PUT = 0x02,
 		HEAD = 0x04,
 		DELETE = 0x08,
-		MASK = 0x0F,
-		)
+		POST = 0x10,
+		MASK = 0x1F,
+	)
 	
 	targets = BidirMap(
 		SERVICE = 0x0100,
 		BUCKET = 0x0200,
 		OBJECT = 0x0400,
 		MASK = 0x0700,
-		)
+	)
 
 	operations = BidirMap(
 		UNDFINED = 0x0000,
@@ -108,13 +109,14 @@ class S3(object):
 		OBJECT_GET = targets["OBJECT"] | http_methods["GET"],
 		OBJECT_HEAD = targets["OBJECT"] | http_methods["HEAD"],
 		OBJECT_DELETE = targets["OBJECT"] | http_methods["DELETE"],
+		OBJECT_POST = targets["OBJECT"] | http_methods["POST"],
 	)
 
 	codes = {
 		"NoSuchBucket" : "Bucket '%s' does not exist",
 		"AccessDenied" : "Access to bucket '%s' was denied",
 		"BucketAlreadyExists" : "Bucket '%s' already exists",
-		}
+	}
 
 	## S3 sometimes sends HTTP-307 response 
 	redir_map = {}
