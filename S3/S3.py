@@ -20,11 +20,11 @@ except ImportError:
 
 from Utils import *
 from SortedDict import SortedDict
+from ACL import ACL, GranteeLogDelivery
+from AccessLog import AccessLog
 from BidirMap import BidirMap
 from Config import Config
 from Exceptions import *
-from ACL import ACL, GranteeLogDelivery
-from AccessLog import AccessLog
 from S3Uri import S3Uri
 
 __all__ = []
