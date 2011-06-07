@@ -574,7 +574,7 @@ class S3(object):
 			else:
 				raise e
 
-		if response["status"] < 200 or response["status"] > 299:
+		if response["status"] < 200 or response["status"] >= 300:
 			raise S3Error(response)
 
 		return response
