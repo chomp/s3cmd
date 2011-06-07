@@ -61,6 +61,8 @@ class Config(object):
 	bucket_location = "US"
 	default_mime_type = "binary/octet-stream"
 	guess_mime_type = True
+	multipart_chunk_size = 5242880
+	multipart_num_threads = 4
 	# List of checks to be performed for 'sync'
 	sync_checks = ['size', 'md5']	# 'weak-timestamp'
 	# List of compiled REGEXPs
