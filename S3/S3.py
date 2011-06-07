@@ -542,13 +542,15 @@ class S3(object):
 		method_string, resource, headers = request.get_triplet()
 		debug("Processing request, please wait...")
 		if "content-length" not in headers:
-			headers["content-length"] = body and len(body) or 0
+			headers['content-length'] = body and len(body) or 0
 		try:
 			# "Stringify" all headers
 			for header in headers.keys():
 				headers[header] = str(headers[header])
 			conn = self.get_connection(resource['bucket'])
-			conn.request(method_string, self.format_uri(resource), body, headers)
+			uri = self.format_uri(resource)
+			debug("Sending request method_string=%r, uri=%r, headers=%r, body=(%i bytes)" % (method_string, uri, headers, len(body or "")))
+			conn.request(method_string, uri, body, headers)
 			response = {}
 			http_response = conn.getresponse()
 			response["status"] = http_response.status
