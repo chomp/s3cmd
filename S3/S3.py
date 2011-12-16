@@ -20,11 +20,12 @@ except ImportError:
 
 from Utils import *
 from SortedDict import SortedDict
+from AccessLog import AccessLog
+from ACL import ACL, GranteeLogDelivery
 from BidirMap import BidirMap
 from Config import Config
 from Exceptions import *
-from ACL import ACL, GranteeLogDelivery
-from AccessLog import AccessLog
+from MultiPart import MultiPartUpload
 from S3Uri import S3Uri
 
 try:
@@ -111,7 +112,8 @@ class S3(object):
         PUT = 0x02,
         HEAD = 0x04,
         DELETE = 0x08,
-        MASK = 0x0F,
+        POST = 0x10,
+        MASK = 0x1F,
         )
 
     targets = BidirMap(
@@ -131,6 +133,7 @@ class S3(object):
         OBJECT_GET = targets["OBJECT"] | http_methods["GET"],
         OBJECT_HEAD = targets["OBJECT"] | http_methods["HEAD"],
         OBJECT_DELETE = targets["OBJECT"] | http_methods["DELETE"],
+        OBJECT_POST = targets["OBJECT"] | http_methods["POST"],
     )
 
     codes = {
@@ -332,7 +335,7 @@ class S3(object):
 
         return response
 
-    def object_put(self, filename, uri, extra_headers = None, extra_label = ""):
+    def object_put(self, filename, uri, extra_headers = None, extra_label = "", multipart = False):
         # TODO TODO
         # Make it consistent with stream-oriented object_get()
         if uri.type != "s3":
@@ -348,6 +351,15 @@ class S3(object):
         headers = SortedDict(ignore_case = True)
         if extra_headers:
             headers.update(extra_headers)
+
+        if not multipart:
+            if size > 104857600: # 100MB
+                multipart = True
+
+        if multipart:
+            # Multipart requests are quite different... drop here
+            return self.send_file_multipart(file, headers, uri, size)
+
         headers["content-length"] = size
         content_type = self.config.mime_type
         if not content_type and self.config.guess_mime_type:
@@ -363,6 +375,33 @@ class S3(object):
         request = self.create_request("OBJECT_PUT", uri = uri, headers = headers)
         labels = { 'source' : unicodise(filename), 'destination' : unicodise(uri.uri()), 'extra' : extra_label }
         response = self.send_file(request, file, labels)
+        return response
+
+    def send_file_multipart(self, file, headers, uri, size):
+        upload = MultiPartUpload(self, file, uri)
+        num_threads = self.config.multipart_num_threads or 4
+
+        if size > MultiPartUpload.MAX_FILE_SIZE:
+                raise RuntimeError("File is too large (%i bytes, max %i)" % (size, MultiPartUpload.MAX_FILE_SIZE))
+        elif size > 107374182400: # 100GB
+                chunk_size = size / 10000
+        elif size > 10737418240: # 10GB
+                chunk_size = size / 1000
+        elif size > 1073741824: # 1GB
+                chunk_size = size / 100
+        else:
+                chunk_size = self.config.multipart_chunk_size or MultiPartUpload.MIN_CHUNK_SIZE
+
+        timestamp_start = time.time()
+        file.seek(0)
+        bucket, key, upload_id = upload.initiate_multipart_upload()
+        upload.upload_all_parts(num_threads, chunk_size)
+        response = upload.complete_multipart_upload()
+        response["size"] = size
+        timestamp_end = time.time()
+
+        response["elapsed"] = timestamp_end - timestamp_start
+        response["speed"] = response["elapsed"] and float(response["size"]) / response["elapsed"] or float(-1)
         return response
 
     def object_get(self, uri, stream, start_position = 0, extra_label = ""):
@@ -844,6 +883,7 @@ class S3(object):
             warning("MD5 signatures do not match: computed=%s, received=%s" % (
                 response["md5"], response["headers"]["etag"]))
         return response
+
 __all__.append("S3")
 
 # vim:et:ts=4:sts=4:ai

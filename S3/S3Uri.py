@@ -34,6 +34,9 @@ class S3Uri(object):
                 continue
         raise ValueError("%s: not a recognized URI" % string)
 
+    def __repr__(self):
+        return "<%s: %s>" % (self.__class__.__name__, self.__unicode__())
+
     def __str__(self):
         return self.uri()
 
